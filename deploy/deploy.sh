@@ -18,6 +18,10 @@ docker compose up -d
 echo "==> waiting for database"
 until docker compose exec -T db pg_isready -U postgres >/dev/null 2>&1; do sleep 2; done
 
+echo "==> waiting for storage schema (created by the storage service on first boot)"
+until docker compose exec -T db psql -U postgres -d postgres -tAc \
+  "select 1 from pg_tables where schemaname='storage' and tablename='objects'" 2>/dev/null | grep -q 1; do sleep 3; done
+
 echo "==> applying migrations"
 sh apply-migrations.sh
 
