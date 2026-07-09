@@ -61,8 +61,9 @@ export function ChipsReveal({
         opacity: 1,
         y: 0,
         scale: 1,
-        duration: 0.35,
-        stagger: 0.045,
+        duration: 0.3,
+        // Cap the total stagger so long chip lists don't feel slow to arrive.
+        stagger: { amount: 0.12 },
         ease: 'power3.out',
         clearProps: 'opacity,transform',
       },

@@ -177,7 +177,8 @@ export function OnboardingChat() {
       setInputReady(false)
       const text = assistantTextFor(id, answersRef.current)
       setGenerating(true)
-      await delay(reduced ? 150 : 600 + Math.random() * 400)
+      // Short beat so the flow reads as conversational without feeling laggy.
+      await delay(reduced ? 100 : 300 + Math.random() * 150)
       if (!mountedRef.current) return
       setGenerating(false)
       if (text) pushBubble('assistant', text)
@@ -401,8 +402,6 @@ export function OnboardingChat() {
                         type: 'spring',
                         stiffness: 340,
                         damping: 30,
-                        // Let the answer bubble land before the next input arrives.
-                        delay: 0.08,
                       },
                     }}
                     exit={{

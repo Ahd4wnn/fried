@@ -125,7 +125,7 @@ export function TherapistOnboardingChat() {
   }, [])
 
   const delayTime = useCallback(
-    () => (reduced ? 150 : 500 + Math.random() * 300),
+    () => (reduced ? 100 : 300 + Math.random() * 150),
     [reduced],
   )
 

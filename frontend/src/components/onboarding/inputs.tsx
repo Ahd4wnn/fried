@@ -14,7 +14,7 @@ const SKIPPED = '(skipped)'
 
 const chipClass = (selected: boolean) =>
   cn(
-    'focus-ring rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150',
+    'focus-ring rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150 active:scale-95',
     selected
       ? 'border-forest bg-forest text-cream shadow-soft'
       : 'border-line/70 bg-paper text-ink hover:border-forest/25 hover:bg-forest-tint/60',
