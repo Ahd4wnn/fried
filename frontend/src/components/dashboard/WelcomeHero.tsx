@@ -21,7 +21,7 @@ export function WelcomeHero() {
   return (
     <section
       className="relative overflow-hidden rounded-3xl border border-forest-deep/10 px-8 py-10 shadow-soft sm:px-12 sm:py-14 min-h-[280px] flex items-center bg-cover bg-center bg-no-repeat bg-forest-deep"
-      style={{ backgroundImage: 'url("/hero_bg.png")' }}
+      style={{ backgroundImage: 'url("/hero_bg.png?v=2")' }}
     >
       {/* Subtle dark overlay to ensure text legibility */}
       <div className="absolute inset-0 bg-forest-deep/30" aria-hidden="true" />

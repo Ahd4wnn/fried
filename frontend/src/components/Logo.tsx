@@ -14,7 +14,9 @@ interface LogoProps {
  */
 export function Logo({ variant = 'dark', className }: LogoProps) {
   const [failed, setFailed] = useState(false)
-  const src = variant === 'white' ? '/logo-white.png' : '/logo.png'
+  // ?v busts caches poisoned by an earlier deploy that served HTML at these
+  // paths with a 200. Bump it if the logo files ever change.
+  const src = variant === 'white' ? '/logo-white.png?v=2' : '/logo.png?v=2'
 
   if (failed) {
     return (

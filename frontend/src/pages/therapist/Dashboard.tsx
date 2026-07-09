@@ -757,7 +757,7 @@ export default function Dashboard() {
 
               {/* Welcome hero banner with blur blobs */}
               <div className="relative overflow-hidden rounded-3xl bg-cover bg-center bg-no-repeat bg-forest-deep border border-forest-deep/10 px-8 py-10 shadow-soft min-h-[200px] flex items-center"
-                style={{ backgroundImage: 'url("/hero_bg.png")' }}>
+                style={{ backgroundImage: 'url("/hero_bg.png?v=2")' }}>
                 <div className="absolute inset-0 bg-forest-deep/35" aria-hidden="true" />
                 <div className="relative z-10 space-y-3">
                   <div className="inline-flex items-center gap-2 rounded-full bg-cream/10 border border-cream/20 backdrop-blur-sm px-3.5 py-1.5 text-xs font-medium text-cream/90">
