@@ -1,0 +1,52 @@
+/* Font packages (self-hosted via Fontsource). */
+@import '@fontsource-variable/inter';
+@import '@fontsource/instrument-serif';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+  }
+
+  /* Calm text selection. */
+  ::selection {
+    @apply bg-forest-tint text-forest-deep;
+  }
+
+  /* Visible keyboard focus everywhere — forest ring at 2px offset (design-system.md). */
+  :focus-visible {
+    @apply outline-none ring-2 ring-forest ring-offset-2 ring-offset-cream;
+  }
+}
+
+@layer components {
+  /*
+   * Shared focus-visible ring for interactive components. Apply alongside a
+   * component's own classes so the ring is consistent everywhere. Components
+   * may set their own ring-offset color to match their background.
+   */
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-cream;
+  }
+
+  /* Respect reduced-motion globally — motion degrades to instant. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

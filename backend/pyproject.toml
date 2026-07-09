@@ -1,0 +1,39 @@
+[project]
+name = "hovio-backend"
+version = "0.1.0"
+description = "Hovio backend — FastAPI service + agentic system (hovio.org)"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["app"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "ASYNC", # flake8-async
+]
+ignore = [
+    "E501", # Ignore line too long errors
+    "B023", # Function definition does not bind loop variable
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# FastAPI's dependency markers are called in argument defaults by design.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Header",
+    "fastapi.Body",
+    "fastapi.Security",
+    "app.core.security.require_role",
+]

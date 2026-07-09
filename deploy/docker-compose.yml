@@ -1,0 +1,46 @@
+# Hovio app layer: Caddy (TLS + routing) + FastAPI backend.
+# The Supabase stack (../supabase) must be up first — this attaches to its
+# Docker network so Caddy and the backend can reach Kong directly.
+name: hovio
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: hovio-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./www:/srv/www:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - supabase
+      - default
+
+  backend:
+    build: ../backend
+    container_name: hovio-backend
+    restart: unless-stopped
+    env_file:
+      - ../backend/.env
+    environment:
+      # Talk to Kong directly over the Docker network
+      SUPABASE_URL: http://kong:8000
+      FRONTEND_ORIGIN: https://hovio.org
+      APP_ENV: production
+    networks:
+      - supabase
+      - default
+
+networks:
+  supabase:
+    external: true
+    name: supabase_default
+
+volumes:
+  caddy_data:
+  caddy_config:

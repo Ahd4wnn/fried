@@ -1,0 +1,26 @@
+{
+	email adon4chr@gmail.com
+}
+
+hovio.org, www.hovio.org {
+	encode gzip zstd
+
+	# FastAPI backend
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	# Supabase services (Kong gateway). Studio is deliberately NOT exposed —
+	# reach it via SSH tunnel: ssh -L 54321:localhost:54321 root@<vps>
+	@supabase path /auth/v1* /rest/v1* /realtime/v1* /storage/v1* /functions/v1*
+	handle @supabase {
+		reverse_proxy kong:8000
+	}
+
+	# Frontend SPA
+	handle {
+		root * /srv/www
+		try_files {path} /index.html
+		file_server
+	}
+}
