@@ -77,7 +77,7 @@ export function TherapistOnboardingChat() {
   const [sessionModes, setSessionModes] = useState<
     Array<'video' | 'audio' | 'chat'>
   >([])
-  const [priceInr, setPriceInr] = useState('')
+  const [priceInr, setPriceInr] = useState('1500')
   const [practiceSetting, setPracticeSetting] = useState('')
   const [bio, setBio] = useState('')
 
@@ -647,12 +647,11 @@ export function TherapistOnboardingChat() {
                   step === 'registration_body_other' ||
                   step === 'registration_number' ||
                   step === 'qualification' ||
-                  step === 'price_inr' ||
                   step === 'practice_setting') && (
                   <form onSubmit={handleTextSubmit} className="flex gap-2">
                     <input
                       ref={textInputRef}
-                      type={step === 'price_inr' ? 'number' : 'text'}
+                      type="text"
                       value={
                         step === 'legal_name'
                           ? legalName
@@ -666,9 +665,7 @@ export function TherapistOnboardingChat() {
                                   ? registrationNumber
                                   : step === 'qualification'
                                     ? qualification
-                                    : step === 'price_inr'
-                                      ? priceInr
-                                      : practiceSetting
+                                    : practiceSetting
                       }
                       onChange={(e) => {
                         if (step === 'legal_name') setLegalName(e.target.value)
@@ -682,8 +679,6 @@ export function TherapistOnboardingChat() {
                           setRegistrationNumber(e.target.value)
                         else if (step === 'qualification')
                           setQualification(e.target.value)
-                        else if (step === 'price_inr')
-                          setPriceInr(e.target.value)
                         else setPracticeSetting(e.target.value)
                       }}
                       placeholder={
@@ -691,9 +686,7 @@ export function TherapistOnboardingChat() {
                           ? 'Enter legal name'
                           : step === 'whatsapp_number'
                             ? 'Enter WhatsApp number'
-                            : step === 'price_inr'
-                              ? 'e.g. 1500'
-                              : 'Type your answer...'
+                            : 'Type your answer...'
                       }
                       className="flex-1 bg-transparent border-none outline-none focus:border-none focus:outline-none focus:ring-0 focus-visible:ring-0 text-sm text-ink placeholder:text-ink-soft/40 px-1 py-2"
                       style={{
@@ -705,6 +698,39 @@ export function TherapistOnboardingChat() {
                     <Button type="submit" disabled={!isFormValid()} size="sm">
                       <ArrowRight className="h-4 w-4" />
                     </Button>
+                  </form>
+                )}
+
+                {/* Session fee slider (₹750–₹3,000) */}
+                {step === 'price_inr' && (
+                  <form onSubmit={handleTextSubmit} className="space-y-4 px-1">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm text-ink-soft">
+                        Fee per session
+                      </span>
+                      <span className="font-display text-2xl text-forest">
+                        ₹{Number(priceInr).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={750}
+                      max={3000}
+                      step={50}
+                      value={priceInr}
+                      onChange={(e) => setPriceInr(e.target.value)}
+                      aria-label="Fee per session in rupees"
+                      className="w-full cursor-pointer accent-forest"
+                    />
+                    <div className="flex justify-between text-xs text-ink-soft">
+                      <span>₹750</span>
+                      <span>₹3,000</span>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="submit" size="sm">
+                        Continue
+                      </Button>
+                    </div>
                   </form>
                 )}
 

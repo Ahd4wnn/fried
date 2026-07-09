@@ -36,8 +36,10 @@ docker compose exec -T db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \
 echo "==> building frontend"
 cd "$REPO_ROOT"
 ANON_KEY=$(grep '^ANON_KEY=' supabase/.env | cut -d= -f2)
+# Mount the whole repo: vite's publicDir is ../assets (repo root), which must
+# be visible inside the build container or images silently vanish from dist.
 docker run --rm \
-  -v "$REPO_ROOT/frontend":/app -w /app \
+  -v "$REPO_ROOT":/app -w /app/frontend \
   -e VITE_SUPABASE_URL=https://hovio.org \
   -e VITE_SUPABASE_ANON_KEY="$ANON_KEY" \
   -e VITE_API_BASE_URL=https://hovio.org \
