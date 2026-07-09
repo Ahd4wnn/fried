@@ -5,6 +5,10 @@
 # backend/.env with production values.
 set -e
 
+# Everything lives inside main() so the shell parses the whole script before
+# executing — `git pull` below rewrites this very file mid-run otherwise.
+main() {
+
 cd "$(dirname "$0")/.."
 REPO_ROOT=$(pwd)
 
@@ -38,11 +42,11 @@ docker run --rm \
   -e VITE_SUPABASE_ANON_KEY="$ANON_KEY" \
   -e VITE_API_BASE_URL=https://hovio.org \
   node:22-alpine sh -c "npm ci && npm run build"
+# Replace contents in place — deploy/www is bind-mounted into the caddy
+# container, so the directory inode must survive (no mv/rm of the dir itself).
 mkdir -p deploy/www
-rm -rf deploy/www.old
-[ -d deploy/www/assets ] && mv deploy/www deploy/www.old && mkdir -p deploy/www
+find deploy/www -mindepth 1 -delete
 cp -r frontend/dist/. deploy/www/
-rm -rf deploy/www.old
 
 echo "==> starting app layer (Caddy + backend)"
 cd "$REPO_ROOT/deploy"
@@ -53,3 +57,6 @@ docker compose restart caddy >/dev/null
 
 echo "==> done"
 docker ps --format '{{.Names}}\t{{.Status}}'
+
+}
+main "$@"
