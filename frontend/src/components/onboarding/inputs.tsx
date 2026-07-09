@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '../ui'
 import { cn } from '../../lib/cn'
-import { ChipsReveal, Reveal } from './reveal'
+import { ChipsReveal } from './reveal'
 import type { ChipOption, InputSpec } from './config'
 
 export interface RawAnswer {
@@ -108,7 +108,7 @@ function TextAnswer({
   }
 
   return (
-    <Reveal className="space-y-3">
+    <div className="space-y-3">
       <form onSubmit={send} className="flex items-end gap-2">
         {spec.long ? (
           <textarea
@@ -142,7 +142,7 @@ function TextAnswer({
           Skip
         </Button>
       )}
-    </Reveal>
+    </div>
   )
 }
 
@@ -160,7 +160,7 @@ function NumberAnswer({
     onSubmit({ raw: value.trim(), label: value.trim() })
   }
   return (
-    <Reveal>
+    <div>
       <form onSubmit={send} className="flex items-end gap-2">
         <input
           autoFocus
@@ -181,7 +181,7 @@ function NumberAnswer({
           <ArrowRight className="h-4 w-4" />
         </Button>
       </form>
-    </Reveal>
+    </div>
   )
 }
 
@@ -346,7 +346,7 @@ function CountryAnswer({ onSubmit }: { onSubmit: (a: RawAnswer) => void }) {
   }
 
   return (
-    <Reveal className="space-y-2.5 w-full max-w-sm">
+    <div className="space-y-2.5 w-full max-w-sm">
       {/* Search input */}
       <div className="relative">
         <input
@@ -391,7 +391,7 @@ function CountryAnswer({ onSubmit }: { onSubmit: (a: RawAnswer) => void }) {
           </li>
         )}
       </ul>
-    </Reveal>
+    </div>
   )
 }
 

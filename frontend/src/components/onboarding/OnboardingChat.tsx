@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'motion/react'
 import { MessageBubble } from '../ui/MessageBubble'
 import { Button } from '../ui'
 import { Logo } from '../Logo'
@@ -382,19 +383,49 @@ export function OnboardingChat() {
                   <MessageBubble variant={b.role}>{b.text}</MessageBubble>
                 </Reveal>
               ))}
-              {generating && <GeneratingIndicator label="Hovio is typing…" />}
-              {inputReady && !generating && current !== 'name' && (
-                <div className="flex justify-start px-2 mb-1">
-                  <button
-                    type="button"
-                    onClick={handleGoBack}
-                    className="text-xs text-ink-soft hover:text-forest transition-colors font-medium flex items-center gap-1 select-none focus:outline-none"
+              <AnimatePresence initial={false}>
+                {generating && (
+                  <GeneratingIndicator key="typing" label="Hovio is typing…" />
+                )}
+              </AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout">
+                {inputReady && !generating && (
+                  <motion.div
+                    key={current}
+                    layout="position"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      transition: {
+                        type: 'spring',
+                        stiffness: 340,
+                        damping: 30,
+                        // Let the answer bubble land before the next input arrives.
+                        delay: 0.08,
+                      },
+                    }}
+                    exit={{
+                      opacity: 0,
+                      y: -6,
+                      transition: { duration: 0.16, ease: 'easeIn' },
+                    }}
                   >
-                    <span>←</span> Go back to previous question
-                  </button>
-                </div>
-              )}
-              {renderInput()}
+                    {current !== 'name' && (
+                      <div className="mb-3 flex justify-start px-2">
+                        <button
+                          type="button"
+                          onClick={handleGoBack}
+                          className="flex select-none items-center gap-1 text-xs font-medium text-ink-soft transition-colors hover:text-forest focus:outline-none"
+                        >
+                          <span>←</span> Go back to previous question
+                        </button>
+                      </div>
+                    )}
+                    {renderInput()}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </>
           ) : mode === 'underage' ? (
             <UnderageOffRamp onExit={() => void exit()} />

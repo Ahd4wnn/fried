@@ -608,7 +608,11 @@ export function TherapistOnboardingChat() {
             </Reveal>
           ))}
 
-          {generating && <GeneratingIndicator label="Hovio is typing..." />}
+          <AnimatePresence initial={false}>
+            {generating && (
+              <GeneratingIndicator key="typing" label="Hovio is typing..." />
+            )}
+          </AnimatePresence>
           <div ref={bottomRef} />
         </div>
       </div>
