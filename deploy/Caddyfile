@@ -24,3 +24,9 @@ hovio.org, www.hovio.org {
 		file_server
 	}
 }
+
+# Supabase Studio dashboard. Kong enforces its own basic auth
+# (DASHBOARD_USERNAME / DASHBOARD_PASSWORD from supabase/.env).
+studio.hovio.org {
+	reverse_proxy kong:8000
+}
