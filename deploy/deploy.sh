@@ -47,6 +47,9 @@ rm -rf deploy/www.old
 echo "==> starting app layer (Caddy + backend)"
 cd "$REPO_ROOT/deploy"
 docker compose up -d --build
+# The caddy admin API is off, so `caddy reload` can't pick up Caddyfile
+# changes — restart instead (a couple of seconds of downtime).
+docker compose restart caddy >/dev/null
 
 echo "==> done"
 docker ps --format '{{.Names}}\t{{.Status}}'
