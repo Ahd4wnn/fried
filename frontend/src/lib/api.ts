@@ -200,6 +200,24 @@ export interface HandoffInvitation {
   expires_at: string | null
 }
 
+/**
+ * Seeker-side shape of GET /handoff/invitations (the endpoint is
+ * role-polymorphic: therapists get HandoffInvitation instead).
+ */
+export interface SeekerInvitation {
+  id: string
+  status: string
+  therapist_id: string
+  display_name: string | null
+  bio: string | null
+  specializations: string[]
+  languages: string[]
+  gender: string | null
+  price_inr: number | null
+  invited_at: string
+  responded_at: string | null
+}
+
 export interface ReportSubmitPayload {
   session_id?: string
   message_id?: string
@@ -334,8 +352,8 @@ export const api = {
       method: 'POST',
       body: { seeker_note: seekerNote },
     }),
-  getHandoffInvitations: () =>
-    request<HandoffInvitation[]>('/handoff/invitations'),
+  getHandoffInvitations: <T = HandoffInvitation>() =>
+    request<T[]>('/handoff/invitations'),
   acceptInvitation: (id: string) =>
     request<{ status: string }>(`/handoff/invitations/${id}/accept`, {
       method: 'POST',
@@ -535,17 +553,69 @@ export const api = {
         payout_reference: string | null
       }>
     }>('/therapist/earnings'),
-  getAdminPayments: () =>
-    request<{
-      orders: any[]
-      payments: any[]
-      payouts: any[]
-    }>('/admin/payments'),
+  getAdminPayments: () => request<AdminPaymentsData>('/admin/payments'),
   adminRefundPayment: (paymentId: string, amountPaise?: number) =>
     request<{ status: string; message: string }>(`/admin/payments/${paymentId}/refund`, {
       method: 'POST',
       body: amountPaise !== undefined ? { amount_paise: amountPaise } : {},
     }),
+}
+
+// ─── Payments types (admin metadata views — no card data / PII) ───────────────
+
+export type PaymentStatus =
+  | 'created'
+  | 'authorized'
+  | 'captured'
+  | 'failed'
+  | 'refunded'
+  | 'partially_refunded'
+
+export type PayoutStatus = 'pending' | 'processing' | 'paid' | 'failed' | 'on_hold'
+
+export interface AdminOrder {
+  id: string
+  booking_id: string
+  seeker_id: string
+  therapist_id: string
+  razorpay_order_id: string | null
+  amount_paise: number
+  currency: string
+  status: PaymentStatus
+  created_at: string
+}
+
+export interface AdminPayment {
+  id: string
+  order_id: string
+  booking_id: string
+  razorpay_payment_id: string | null
+  status: PaymentStatus
+  amount_paise: number
+  commission_paise: number
+  therapist_gross_paise: number
+  gateway_fee_paise: number | null
+  method: string | null
+  refunded_paise: number
+  captured_at: string | null
+  created_at: string
+}
+
+export interface AdminPayout {
+  id: string
+  therapist_id: string
+  payment_id: string | null
+  amount_paise: number
+  status: PayoutStatus
+  reference: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface AdminPaymentsData {
+  orders: AdminOrder[]
+  payments: AdminPayment[]
+  payouts: AdminPayout[]
 }
 
 // ─── Scheduling types ──────────────────────────────────────────────────────────

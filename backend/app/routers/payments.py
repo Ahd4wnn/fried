@@ -7,7 +7,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 
 from app.adapters.payments import RazorpayAdapter
@@ -25,6 +25,11 @@ logger = logging.getLogger("hovio.routers.payments")
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 
+# Contract path for server-to-server webhooks (docs/api-contract.md:
+# POST /api/v1/webhooks/razorpay). The handler is also mounted under
+# /api/v1/payments/webhooks/razorpay for backwards compatibility.
+webhook_router = APIRouter(prefix="/api/v1/webhooks", tags=["payments"])
+
 
 
 
@@ -33,8 +38,13 @@ router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 async def create_payment_order(
     body: OrderCreateRequest,
     user: CurrentUser = Depends(require_role("seeker")),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> Any:
-    """Verify hold isn't expired, create a Razorpay order, and return order details."""
+    """Verify hold isn't expired, create a Razorpay order, and return order details.
+
+    Idempotent per booking: retries (same Idempotency-Key or not) reuse the
+    booking's existing 'created' order instead of creating a duplicate.
+    """
     sb = get_supabase()
     # Clean up expired slot holds before order creation
     cleanup_expired_holds(sb)
@@ -125,7 +135,7 @@ async def create_payment_order(
         rzp_order = await adapter.create_order(amount_paise, receipt=f"bk_{booking_id}")
     except Exception as e:
         logger.exception("Order creation failed: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     # Persist the order
     order_row = {
@@ -328,7 +338,7 @@ async def razorpay_webhook(
     try:
         payload = json.loads(body_bytes.decode())
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
+        raise HTTPException(status_code=400, detail="Invalid JSON body") from None
 
     event_id = payload.get("id")
     event_type = payload.get("event")
@@ -492,3 +502,7 @@ async def razorpay_webhook(
         await run_in_threadpool(_fail_payment)
 
     return {"status": "success"}
+
+
+# Mount the same handler at the contract path /api/v1/webhooks/razorpay.
+webhook_router.post("/razorpay")(razorpay_webhook)

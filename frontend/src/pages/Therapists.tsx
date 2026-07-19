@@ -24,6 +24,7 @@ import { Button } from '../components/ui/Button'
 import { Sheet } from '../components/ui/Sheet'
 import { Spinner } from '../components/ui/Spinner'
 import { cn } from '../lib/cn'
+import { loadRazorpay, type RazorpayOptions } from '../lib/razorpay'
 import { motion, AnimatePresence } from 'motion/react'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -382,20 +383,6 @@ function getCalendarWeeks(year: number, month: number) {
   return weeks
 }
 
-function loadRazorpay(): Promise<boolean> {
-  return new Promise<boolean>((resolve) => {
-    if ((window as any).Razorpay) {
-      resolve(true)
-      return
-    }
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.onload = () => resolve(true)
-    script.onerror = () => resolve(false)
-    document.body.appendChild(script)
-  })
-}
-
 // ─── Slot picker ──────────────────────────────────────────────────────────────
 
 function SlotPicker({
@@ -463,6 +450,9 @@ function SlotPicker({
       if (!scriptLoaded) {
         throw new Error('Failed to load Razorpay payment gateway script.')
       }
+      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+        throw new Error('Payments are not configured. Please contact support.')
+      }
 
       // Prefill seeker name/email
       let meEmail = ''
@@ -476,8 +466,8 @@ function SlotPicker({
       }
 
       // 4. Configure Razorpay Options
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_T5XHivLuv4Oc8h',
+      const options: RazorpayOptions = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: order.amount_paise,
         currency: order.currency,
         name: 'Hovio',
@@ -490,7 +480,7 @@ function SlotPicker({
         theme: {
           color: '#1C5C32',
         },
-        handler: async function (response: any) {
+        handler: async function (response) {
           setBooking(true)
           setError(null)
           try {
@@ -515,8 +505,11 @@ function SlotPicker({
         },
       }
 
-      const rzp = new (window as any).Razorpay(options)
-      rzp.on('payment.failed', function (resp: any) {
+      if (!window.Razorpay) {
+        throw new Error('Failed to load Razorpay payment gateway script.')
+      }
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', function (resp) {
         setError(resp.error.description || 'Payment failed.')
         setBooking(false)
       })
@@ -934,6 +927,7 @@ export default function Therapists() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount: load() toggles its own loading flag
     load(filters)
   }, [filters, load])
 

@@ -7,9 +7,10 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
-from pydantic import BaseModel, Field
 
-from app.adapters.llm import ChatMessage, OpenAIAdapter
+from pydantic import BaseModel
+
+from app.adapters.llm import OpenAIAdapter
 from app.core.supabase import get_supabase
 from app.services.crypto import decrypt, parse_bytea
 

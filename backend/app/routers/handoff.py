@@ -109,7 +109,7 @@ async def confirm_escalation(
             )
 
         await run_in_threadpool(_revert)
-        raise HTTPException(status_code=500, detail=f"Failed to generate summary: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate summary: {e}") from e
 
     # 4. Run matcher in background task
     background_tasks.add_task(run_matcher, user.id, escalation_id, summary_text)

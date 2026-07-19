@@ -238,7 +238,7 @@ async def run_matcher(user_id: str, escalation_id: str, summary_text: str) -> No
             sb.table("therapist_profiles")
             .select("*, profiles!inner(display_name)")
             .eq("verification_status", "verified")
-            .eq("bookable", true := True)
+            .eq("bookable", True)
             .execute()
         )
 
@@ -271,7 +271,7 @@ async def run_matcher(user_id: str, escalation_id: str, summary_text: str) -> No
                 score += 10.0
 
         # Language match: +5
-        t_langs = [l.lower() for l in t.get("languages", [])]
+        t_langs = [lang.lower() for lang in t.get("languages", [])]
         if any(pl.lower() in t_langs for pl in preferred_languages):
             score += 5.0
 

@@ -30,6 +30,7 @@ export default function DashboardHome() {
   })
 
   // Derive next upcoming confirmed/pending booking for the widget
+  // eslint-disable-next-line react-hooks/purity -- time-based partition of fetched bookings; recomputing per render is intended
   const now = Date.now()
   const nextBooking = (bookings ?? [])
     .filter(

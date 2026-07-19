@@ -2,13 +2,21 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Send, Sparkles, MoreVertical, Flag } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
-import { api, type AIMessage } from '../../lib/api'
+import { api, type AIMessage, type DbHelpline, type SeekerInvitation } from '../../lib/api'
 import { supabase } from '../../lib/supabase'
 import { env } from '../../lib/env'
 import { cn } from '../../lib/cn'
 import { gsap } from '../../motion/gsap'
 import { useHelplines } from '../../components/safety/useHelplines'
 import { CrisisButton } from '../../components/safety/CrisisButton'
+
+type ReportCategory =
+  | 'harmful'
+  | 'inappropriate'
+  | 'incorrect'
+  | 'unhelpful'
+  | 'technical'
+  | 'other'
 
 /**
  * ChatSession Page — The seeker's private dialogue space with their AI companion.
@@ -31,7 +39,7 @@ export default function ChatSession() {
 
   // Crisis handler state
   const [isCrisis, setIsCrisis] = useState(false)
-  const [crisisHelplines, setCrisisHelplines] = useState<any[]>([])
+  const [crisisHelplines, setCrisisHelplines] = useState<DbHelpline[]>([])
   const [showConfirmEnd, setShowConfirmEnd] = useState(false)
 
   // Report states
@@ -39,14 +47,7 @@ export default function ChatSession() {
   const [reportTargetMessageId, setReportTargetMessageId] = useState<
     string | undefined
   >(undefined)
-  const [reportCategory, setReportCategory] = useState<
-    | 'harmful'
-    | 'inappropriate'
-    | 'incorrect'
-    | 'unhelpful'
-    | 'technical'
-    | 'other'
-  >('harmful')
+  const [reportCategory, setReportCategory] = useState<ReportCategory>('harmful')
   const [reportDescription, setReportDescription] = useState('')
   const [reporting, setReporting] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
@@ -69,9 +70,9 @@ export default function ChatSession() {
   >('none')
   const [seekerNote, setSeekerNote] = useState('')
   const [intakeSummaryText, setIntakeSummaryText] = useState('')
-  const [invitations, setInvitations] = useState<any[]>([])
+  const [invitations, setInvitations] = useState<SeekerInvitation[]>([])
   const [matchingLoading, setMatchingLoading] = useState(false)
-  const [selectedTherapist, setSelectedTherapist] = useState<any | null>(null)
+  const [selectedTherapist, setSelectedTherapist] = useState<Partial<SeekerInvitation> | null>(null)
 
   const { helplines: dbHelplines } = useHelplines()
 
@@ -154,8 +155,8 @@ export default function ChatSession() {
                     }
                   } else {
                     const invs = await api
-                      .getHandoffInvitations()
-                      .catch(() => [])
+                      .getHandoffInvitations<SeekerInvitation>()
+                      .catch(() => [] as SeekerInvitation[])
                     if (active) {
                       setInvitations(invs)
                       setEscalationStatus(
@@ -189,9 +190,9 @@ export default function ChatSession() {
           setSearchParams({ id: newSession.id })
           setMessages([])
         }
-      } catch (err: any) {
+      } catch (err) {
         if (!active) return
-        setError(err?.message || 'Failed to load companion session.')
+        setError(err instanceof Error ? err.message : 'Failed to load companion session.')
       } finally {
         if (active) setLoading(false)
       }
@@ -223,8 +224,8 @@ export default function ChatSession() {
       setLoading(true)
       await api.endAISession(sessionId)
       navigate('/dashboard', { replace: true })
-    } catch (err: any) {
-      alert(err?.message || 'Failed to end session.')
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to end session.')
     } finally {
       setLoading(false)
     }
@@ -404,7 +405,7 @@ export default function ChatSession() {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Chat error or stream drop:', err)
       setIsCrisis(true)
       const fallbackContent =
@@ -461,9 +462,9 @@ export default function ChatSession() {
       const summaryRes = await api.getSharedSummary(res.escalation_id)
       setIntakeSummaryText(summaryRes.summary)
       setEscalationStatus('consenting')
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to confirm escalation:', err)
-      alert(err?.message || 'Failed to prepare summary. Please try again.')
+      alert(err instanceof Error ? err.message : 'Failed to prepare summary. Please try again.')
     } finally {
       setMatchingLoading(false)
     }
@@ -480,9 +481,9 @@ export default function ChatSession() {
     try {
       await api.consentSummary(suggestedEscalationId, seekerNote)
       setEscalationStatus('matching')
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to consent to summary:', err)
-      alert(err?.message || 'Failed to submit consent.')
+      alert(err instanceof Error ? err.message : 'Failed to submit consent.')
     } finally {
       setMatchingLoading(false)
     }
@@ -490,30 +491,18 @@ export default function ChatSession() {
 
   const handleSelectTherapist = async (
     invitationId: string,
-    therapist: any,
+    therapist: SeekerInvitation,
   ) => {
     setMatchingLoading(true)
     try {
       await api.selectTherapist(invitationId)
       setSelectedTherapist(therapist)
       setEscalationStatus('therapist_selected')
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to select therapist:', err)
-      alert(err?.message || 'Failed to select therapist.')
+      alert(err instanceof Error ? err.message : 'Failed to select therapist.')
     } finally {
       setMatchingLoading(false)
-    }
-  }
-
-  const pollInvitations = async () => {
-    try {
-      const invs = await api.getHandoffInvitations()
-      setInvitations(invs)
-      if (invs.length > 0 && escalationStatus === 'matching') {
-        setEscalationStatus('awaiting_selection')
-      }
-    } catch (err) {
-      console.error('Failed to fetch invitations:', err)
     }
   }
 
@@ -523,6 +512,18 @@ export default function ChatSession() {
       escalationStatus !== 'awaiting_selection'
     )
       return
+
+    const pollInvitations = async () => {
+      try {
+        const invs = await api.getHandoffInvitations<SeekerInvitation>()
+        setInvitations(invs)
+        if (invs.length > 0 && escalationStatus === 'matching') {
+          setEscalationStatus('awaiting_selection')
+        }
+      } catch (err) {
+        console.error('Failed to fetch invitations:', err)
+      }
+    }
 
     pollInvitations()
     const interval = setInterval(pollInvitations, 5000)
@@ -551,9 +552,9 @@ export default function ChatSession() {
       setShowReportModal(false)
       setToastMessage('Report submitted successfully.')
       setTimeout(() => setToastMessage(null), 3000)
-    } catch (err: any) {
+    } catch (err) {
       setReportError(
-        err?.message || 'Failed to submit report. Please try again.',
+        err instanceof Error ? err.message : 'Failed to submit report. Please try again.',
       )
     } finally {
       setReporting(false)
@@ -945,7 +946,7 @@ export default function ChatSession() {
                   </label>
                   <select
                     value={reportCategory}
-                    onChange={(e) => setReportCategory(e.target.value as any)}
+                    onChange={(e) => setReportCategory(e.target.value as ReportCategory)}
                     className="focus-ring h-10 w-full rounded-md border border-line bg-paper px-3 text-sm text-ink cursor-pointer"
                   >
                     <option value="harmful">Harmful or unsafe</option>

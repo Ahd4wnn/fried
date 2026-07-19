@@ -18,7 +18,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging, get_logger
-from app.routers import admin, ai, handoff, health, me, media, onboarding, safety, therapist, scheduling, payments
+from app.routers import (
+    admin,
+    ai,
+    handoff,
+    health,
+    me,
+    media,
+    onboarding,
+    payments,
+    safety,
+    scheduling,
+    therapist,
+)
 
 
 @asynccontextmanager
@@ -57,6 +69,7 @@ def create_app() -> FastAPI:
     app.include_router(admin.router)
     app.include_router(scheduling.router)
     app.include_router(payments.router)
+    app.include_router(payments.webhook_router)
     return app
 
 

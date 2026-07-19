@@ -30,6 +30,8 @@ import type {
   AdminUserItem,
   CountryDemandItem,
   CrisisEventAggregate,
+  AdminPaymentsData,
+  AdminPayment,
 } from '../../lib/api'
 import {
   Button,
@@ -70,12 +72,8 @@ export default function AdminDashboard({ tab }: AdminDashboardProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
   // Payments & Payouts tab state
-  const [adminPayments, setAdminPayments] = useState<{
-    orders: any[]
-    payments: any[]
-    payouts: any[]
-  } | null>(null)
-  const [refundTarget, setRefundTarget] = useState<any | null>(null)
+  const [adminPayments, setAdminPayments] = useState<AdminPaymentsData | null>(null)
+  const [refundTarget, setRefundTarget] = useState<AdminPayment | null>(null)
   const [refundAmountStr, setRefundAmountStr] = useState('')
   const [refundSubmitting, setRefundSubmitting] = useState(false)
   const [refundError, setRefundError] = useState<string | null>(null)
@@ -150,7 +148,9 @@ export default function AdminDashboard({ tab }: AdminDashboardProps) {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-tab-change: fetchData() toggles its own loading flag
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchData reads searchQuery; refetching on every keystroke is not desired
   }, [tab])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -1651,12 +1651,8 @@ export default function AdminDashboard({ tab }: AdminDashboardProps) {
 }
 
 interface PaymentsTabProps {
-  data: {
-    orders: any[]
-    payments: any[]
-    payouts: any[]
-  } | null
-  onRefund: (payment: any) => void
+  data: AdminPaymentsData | null
+  onRefund: (payment: AdminPayment) => void
 }
 
 function PaymentsTab({ data, onRefund }: PaymentsTabProps) {
@@ -1731,7 +1727,7 @@ function PaymentsTab({ data, onRefund }: PaymentsTabProps) {
         ].map((tabItem) => (
           <button
             key={tabItem.id}
-            onClick={() => setSubTab(tabItem.id as any)}
+            onClick={() => setSubTab(tabItem.id as 'orders' | 'payments' | 'payouts')}
             className={cn(
               'px-6 py-3 text-xs font-semibold font-sans border-b-2 transition-all cursor-pointer relative -bottom-px border-0 bg-transparent',
               subTab === tabItem.id
@@ -1777,7 +1773,7 @@ function PaymentsTab({ data, onRefund }: PaymentsTabProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {payments.map((p: any) => {
+                      {payments.map((p) => {
                         const canRefund = (p.status === 'captured' || p.status === 'partially_refunded') && (p.amount_paise > p.refunded_paise)
                         return (
                           <tr key={p.id} className="border-b border-white/[0.04] hover:bg-white/[0.01] transition-colors font-sans">
@@ -1799,7 +1795,7 @@ function PaymentsTab({ data, onRefund }: PaymentsTabProps) {
                             </td>
                             <td className="p-4 text-neutral-300">
                               {formatINR(p.commission_paise)}
-                              {p.gateway_fee_paise > 0 && (
+                              {p.gateway_fee_paise != null && p.gateway_fee_paise > 0 && (
                                 <span className="text-[9px] text-neutral-500 block">Fee: {formatINR(p.gateway_fee_paise)}</span>
                               )}
                             </td>
@@ -1874,7 +1870,7 @@ function PaymentsTab({ data, onRefund }: PaymentsTabProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {orders.map((o: any) => (
+                      {orders.map((o) => (
                         <tr key={o.id} className="border-b border-white/[0.04] hover:bg-white/[0.01] transition-colors font-sans">
                           <td className="p-4">
                             <p className="font-semibold text-white truncate max-w-[120px]" title={o.id}>{o.id}</p>
@@ -1944,7 +1940,7 @@ function PaymentsTab({ data, onRefund }: PaymentsTabProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {payouts.map((p: any) => (
+                      {payouts.map((p) => (
                         <tr key={p.id} className="border-b border-white/[0.04] hover:bg-white/[0.01] transition-colors font-sans">
                           <td className="p-4 font-semibold text-white">{p.id}</td>
                           <td className="p-4 font-mono text-neutral-300">{p.therapist_id.substring(0, 8)}...</td>

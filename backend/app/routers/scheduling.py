@@ -3,26 +3,25 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta, time, date
-from typing import Any, Literal
+from datetime import UTC, date, datetime, time, timedelta
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
-from app.core.errors import AppError
-from app.core.security import CurrentUser, require_role, get_current_user
+from app.core.security import CurrentUser, get_current_user, require_role
 from app.core.supabase import get_supabase
 from app.schemas.scheduling import (
     AvailabilityBlockCreate,
-    AvailabilityBlockUpdate,
     AvailabilityBlockResponse,
-    SlotResponse,
-    BookingCreate,
+    AvailabilityBlockUpdate,
     BookingCancelRequest,
+    BookingCreate,
     BookingRescheduleRequest,
     BookingResponse,
+    SlotResponse,
 )
 
 logger = logging.getLogger("hovio.routers.scheduling")
@@ -433,8 +432,8 @@ async def list_therapists(
                 continue
 
         if language:
-            req_langs = [l.strip().lower() for l in language.split(",") if l.strip()]
-            t_langs = [l.lower() for l in t.get("languages", [])]
+            req_langs = [lang.strip().lower() for lang in language.split(",") if lang.strip()]
+            t_langs = [lang.lower() for lang in t.get("languages", [])]
             if not any(rl in t_langs for rl in req_langs):
                 continue
 

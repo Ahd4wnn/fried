@@ -17,6 +17,7 @@ import { ROUTE_DASHBOARD } from '../../components/dashboard/routes'
 import { api, ApiError } from '../../lib/api'
 import type { Booking } from '../../lib/api'
 import { cn } from '../../lib/cn'
+import { loadRazorpay, type RazorpayOptions } from '../../lib/razorpay'
 
 const IST = 'Asia/Kolkata'
 
@@ -76,20 +77,6 @@ function SectionPlaceholder({
   )
 }
 
-function loadRazorpay(): Promise<boolean> {
-  return new Promise<boolean>((resolve) => {
-    if ((window as any).Razorpay) {
-      resolve(true)
-      return
-    }
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.onload = () => resolve(true)
-    script.onerror = () => resolve(false)
-    document.body.appendChild(script)
-  })
-}
-
 export function CalendarSection() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
@@ -113,6 +100,9 @@ export function CalendarSection() {
       if (!scriptLoaded) {
         throw new Error('Failed to load Razorpay payment gateway script.')
       }
+      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+        throw new Error('Payments are not configured. Please contact support.')
+      }
 
       let meEmail = ''
       let meName = ''
@@ -124,8 +114,8 @@ export function CalendarSection() {
         // silent fallback
       }
 
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_T5XHivLuv4Oc8h',
+      const options: RazorpayOptions = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: order.amount_paise,
         currency: order.currency,
         name: 'Hovio',
@@ -138,7 +128,7 @@ export function CalendarSection() {
         theme: {
           color: '#1C5C32',
         },
-        handler: async function (response: any) {
+        handler: async function (response) {
           setPayingBookingId(b.id)
           setPayError(null)
           try {
@@ -163,8 +153,11 @@ export function CalendarSection() {
         },
       }
 
-      const rzp = new (window as any).Razorpay(options)
-      rzp.on('payment.failed', function (resp: any) {
+      if (!window.Razorpay) {
+        throw new Error('Failed to load Razorpay payment gateway script.')
+      }
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', function (resp) {
         setPayError(resp.error.description || 'Payment failed.')
         setPayingBookingId(null)
       })
@@ -176,6 +169,7 @@ export function CalendarSection() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/purity -- time-based partition of fetched bookings; recomputing per render is intended
   const now = Date.now()
   const upcoming = bookings
     .filter(

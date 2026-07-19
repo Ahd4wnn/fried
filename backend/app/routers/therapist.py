@@ -11,13 +11,13 @@ from fastapi.concurrency import run_in_threadpool
 
 from app.core.security import CurrentUser, require_role
 from app.core.supabase import get_supabase
+from app.schemas.payments import TherapistEarningsResponse
 from app.schemas.therapist import (
     TherapistOnboardingSubmit,
     TherapistProfileResponse,
     TherapistProfileUpdate,
     VerificationRequestResponse,
 )
-from app.schemas.payments import TherapistEarningsResponse
 from app.services.crypto import encrypt
 
 logger = logging.getLogger("hovio.routers.therapist")

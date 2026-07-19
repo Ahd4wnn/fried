@@ -9,6 +9,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
+from app.adapters.payments import RazorpayAdapter
 from app.core.security import CurrentUser, require_role
 from app.core.supabase import get_supabase
 from app.schemas.admin import (
@@ -30,7 +31,6 @@ from app.schemas.admin import (
     VerificationRequestItem,
 )
 from app.schemas.payments import AdminPaymentsResponse, AdminRefundRequest
-from app.adapters.payments import RazorpayAdapter
 from app.services.audit import write_audit
 from app.services.crypto import decrypt, parse_bytea
 
@@ -1044,7 +1044,7 @@ async def admin_refund_payment(
         await adapter.create_refund(rzp_payment_id, amount_to_refund)
     except Exception as e:
         logger.exception("Razorpay refund API failed: %s", e)
-        raise HTTPException(status_code=500, detail=f"Razorpay refund failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Razorpay refund failed: {e}") from e
 
     # 3. Update payment status in database
     new_refunded_total = payment["refunded_paise"] + amount_to_refund

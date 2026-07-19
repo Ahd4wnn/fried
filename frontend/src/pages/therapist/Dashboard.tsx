@@ -170,6 +170,7 @@ function AvailabilityTab({ showToast }: { showToast: (msg: string) => void }) {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount: loadBlocks() toggles its own loading flag
   useEffect(() => { loadBlocks() }, [])
 
   const handleCreate = async (e: React.FormEvent) => {
