@@ -36,4 +36,6 @@ export interface UpcomingSession {
   /** ISO timestamp. */
   startsAt: string
   modality: 'video' | 'audio' | 'chat'
+  /** True when the live-session join window is currently open. */
+  joinable?: boolean
 }

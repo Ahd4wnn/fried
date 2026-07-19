@@ -10,6 +10,7 @@ import { GroundingCard } from '../../components/dashboard/GroundingCard'
 import { ProfileNudge } from '../../components/dashboard/ProfileNudge'
 import { staggerChildren, fadeUp } from '../../motion/presets'
 import { api } from '../../lib/api'
+import { isJoinable } from '../../lib/liveSession'
 import type { SessionSummary } from '../../components/dashboard/types'
 import type { UpcomingSession } from '../../components/dashboard/types'
 
@@ -29,16 +30,27 @@ export default function DashboardHome() {
     retry: false,
   })
 
-  // Derive next upcoming confirmed/pending booking for the widget
+  const { data: liveSessions } = useQuery({
+    queryKey: ['live-sessions'],
+    queryFn: () => api.getLiveSessions(),
+    retry: false,
+  })
+
+  // Derive next upcoming confirmed/pending booking for the widget. A session
+  // stays here while its join window is open, so "Join" works mid-session.
   // eslint-disable-next-line react-hooks/purity -- time-based partition of fetched bookings; recomputing per render is intended
   const now = Date.now()
   const nextBooking = (bookings ?? [])
     .filter(
       (b) =>
         (b.status === 'confirmed' || b.status === 'pending_payment') &&
-        new Date(b.starts_at).getTime() > now,
+        new Date(b.ends_at).getTime() + 15 * 60_000 > now,
     )
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())[0]
+
+  const nextLive = nextBooking
+    ? (liveSessions ?? []).find((l) => l.booking_id === nextBooking.id)
+    : undefined
 
   const upcomingSession: UpcomingSession | null = nextBooking
     ? {
@@ -47,6 +59,7 @@ export default function DashboardHome() {
         therapistAvatarUrl: null,
         startsAt: nextBooking.starts_at,
         modality: nextBooking.modality as 'video' | 'audio' | 'chat',
+        joinable: isJoinable(nextBooking, nextLive),
       }
     : null
 

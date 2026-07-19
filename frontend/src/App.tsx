@@ -57,6 +57,7 @@ const ProfileSection = lazy(() =>
   })),
 )
 const StartSession = lazy(() => import('./pages/dashboard/ChatSession'))
+const LiveSession = lazy(() => import('./pages/session/LiveSession'))
 
 // Dev-only styleguide — never linked from production nav.
 const Styleguide = lazy(() => import('./pages/Styleguide'))
@@ -83,6 +84,9 @@ export default function App() {
         {/* Authenticated + role-assigned */}
         <Route element={<ProtectedRoute />}>
           <Route path="/onboarding" element={<Onboarding />} />
+          {/* Live human session room — seeker and therapist both land here;
+              the backend authorizes the two real participants. */}
+          <Route path="/session/:bookingId" element={<LiveSession />} />
         </Route>
 
         {/* Seeker dashboard (authenticated + seeker + onboarded) */}

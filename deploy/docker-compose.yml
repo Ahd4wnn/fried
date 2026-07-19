@@ -36,6 +36,25 @@ services:
       - supabase
       - default
 
+  # Self-hosted LiveKit for live human sessions (video/audio/chat).
+  # Signalling is reverse-proxied by Caddy at wss://hovio.org/livekit; media
+  # flows over the published RTC ports. API keys come from backend/.env via
+  # deploy.sh (exported as LIVEKIT_API_KEY / LIVEKIT_API_SECRET).
+  livekit:
+    image: livekit/livekit-server:v1.9
+    container_name: hovio-livekit
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-devsecret_devsecret_devsecret_00}"
+    ports:
+      - "7881:7881"                     # WebRTC over TCP (fallback)
+      - "50000-50200:50000-50200/udp"   # WebRTC media
+    networks:
+      - default
+
 networks:
   supabase:
     external: true

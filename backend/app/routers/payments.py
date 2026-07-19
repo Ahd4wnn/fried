@@ -13,6 +13,7 @@ from fastapi.concurrency import run_in_threadpool
 from app.adapters.payments import RazorpayAdapter
 from app.core.security import CurrentUser, require_role
 from app.core.supabase import get_supabase
+from app.routers.live import provision_live_session
 from app.routers.scheduling import cleanup_expired_holds
 from app.schemas.payments import (
     OrderCreateRequest,
@@ -317,6 +318,9 @@ async def verify_payment(
         }
         sb.table("payouts").insert(payout_row).execute()
 
+        # Provision the LiveKit-backed live session for the confirmed booking
+        provision_live_session(sb, booking)
+
     await run_in_threadpool(_confirm_booking)
     return {"status": "success", "message": "Booking confirmed and slot booked."}
 
@@ -489,6 +493,9 @@ async def razorpay_webhook(
                 "status": "pending",
             }
             sb.table("payouts").insert(payout_row).execute()
+
+            # Provision the LiveKit-backed live session for the confirmed booking
+            provision_live_session(sb, booking)
 
         await run_in_threadpool(_confirm_booking)
 

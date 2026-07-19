@@ -15,9 +15,10 @@ import {
 import { Card, EmptyState } from '../../components/ui'
 import { ROUTE_DASHBOARD } from '../../components/dashboard/routes'
 import { api, ApiError } from '../../lib/api'
-import type { Booking } from '../../lib/api'
+import type { Booking, LiveSessionState } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { loadRazorpay, type RazorpayOptions } from '../../lib/razorpay'
+import { isJoinable } from '../../lib/liveSession'
 
 const IST = 'Asia/Kolkata'
 
@@ -79,15 +80,24 @@ function SectionPlaceholder({
 
 export function CalendarSection() {
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [liveByBooking, setLiveByBooking] = useState<
+    Record<string, LiveSessionState>
+  >({})
   const [loading, setLoading] = useState(true)
   const [payingBookingId, setPayingBookingId] = useState<string | null>(null)
   const [payError, setPayError] = useState<string | null>(null)
 
   useEffect(() => {
-    api
-      .getMyBookings()
-      .then(setBookings)
-      .catch(() => setBookings([]))
+    Promise.all([
+      api.getMyBookings().catch(() => [] as Booking[]),
+      api.getLiveSessions().catch(() => [] as LiveSessionState[]),
+    ])
+      .then(([bs, lives]) => {
+        setBookings(bs)
+        setLiveByBooking(
+          Object.fromEntries(lives.map((l) => [l.booking_id, l])),
+        )
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -171,11 +181,15 @@ export function CalendarSection() {
 
   // eslint-disable-next-line react-hooks/purity -- time-based partition of fetched bookings; recomputing per render is intended
   const now = Date.now()
+  // A confirmed booking stays "upcoming" while its join window is still open,
+  // so an in-progress session keeps its Join button.
+  const windowStillOpen = (b: Booking) =>
+    new Date(b.ends_at).getTime() + 15 * 60_000 > now
   const upcoming = bookings
     .filter(
       (b) =>
         (b.status === 'confirmed' || b.status === 'pending_payment') &&
-        new Date(b.starts_at).getTime() > now,
+        windowStillOpen(b),
     )
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
   const past = bookings
@@ -184,7 +198,7 @@ export function CalendarSection() {
         b.status === 'completed' ||
         b.status === 'cancelled' ||
         b.status === 'no_show' ||
-        new Date(b.starts_at).getTime() <= now,
+        !windowStillOpen(b),
     )
     .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
     .slice(0, 5)
@@ -269,6 +283,19 @@ export function CalendarSection() {
                           {payingBookingId === b.id ? 'Processing...' : 'Pay now'}
                         </button>
                       )}
+                      {b.status === 'confirmed' &&
+                        (isJoinable(b, liveByBooking[b.id]) ? (
+                          <Link
+                            to={`/session/${b.id}`}
+                            className="mt-1.5 rounded-full bg-forest px-3.5 py-1.5 text-[10px] font-semibold text-white hover:bg-forest-deep transition-all active:scale-[0.98]"
+                          >
+                            Join session
+                          </Link>
+                        ) : (
+                          <span className="mt-1.5 text-[10px] text-ink-soft">
+                            Join opens 10 min before
+                          </span>
+                        ))}
                     </div>
                   </div>
                 )
@@ -292,7 +319,14 @@ export function CalendarSection() {
                       <Icon className="h-5 w-5" />
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-ink-soft">Session</p>
+                      <p className="text-sm font-medium text-ink-soft">
+                        Session
+                        {liveByBooking[b.id]?.duration_minutes != null && (
+                          <span className="text-xs text-ink-soft/60">
+                            {' '}· {liveByBooking[b.id].duration_minutes} min
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-ink-soft/60 mt-0.5">{fmtIST(b.starts_at)} IST</p>
                     </div>
                     <span

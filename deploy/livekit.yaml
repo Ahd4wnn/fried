@@ -1,0 +1,15 @@
+# LiveKit server config (self-hosted, single node).
+# API key/secret are injected via the LIVEKIT_KEYS env var (from backend/.env,
+# see deploy.sh) — never committed here.
+# No egress/recording is configured: sessions are NOT recorded, by design.
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50200
+  # Discover the VPS public IP for ICE candidates.
+  use_external_ip: true
+logging:
+  level: info
+  # JSON logs stay metadata-only; LiveKit never logs media content.
+  json: false

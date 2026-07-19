@@ -10,6 +10,12 @@ hovio.org, www.hovio.org {
 		reverse_proxy backend:8000
 	}
 
+	# LiveKit signalling (WebSocket). Clients connect to wss://hovio.org/livekit;
+	# the prefix is stripped so the SDK's /rtc paths reach the server.
+	handle_path /livekit/* {
+		reverse_proxy livekit:7880
+	}
+
 	# Supabase services (Kong gateway). Studio is deliberately NOT exposed —
 	# reach it via SSH tunnel: ssh -L 54321:localhost:54321 root@<vps>
 	@supabase path /auth/v1* /rest/v1* /realtime/v1* /storage/v1* /functions/v1*

@@ -32,7 +32,9 @@ import type {
   HandoffInvitation,
   AvailabilityBlock,
   AvailabilityBlockCreate,
+  LiveSessionState,
 } from '../../lib/api'
+import { NotesEditor } from '../../components/session/NotesEditor'
 import { Dropdown } from '../../components/ui'
 import { Spinner } from '../../components/ui/Spinner'
 import type { DropdownOption } from '../../components/ui'
@@ -1312,14 +1314,18 @@ export default function Dashboard() {
             )
           )}
 
-          {/* ══ TAB 4: CALENDAR ══════════════════════════════════════════ */}
+          {/* ══ TAB 4: CALENDAR & SESSIONS ═══════════════════════════════ */}
           {activeTab === 'calendar' && (
-            <LockedTab
-              icon={Calendar}
-              title="Sessions calendar"
-              description="View your confirmed bookings, launch LiveKit video rooms, and maintain envelope-encrypted session notes. Coming soon."
-              accent="bg-accent-lavender/40 border-[#B7A6E0]/20"
-            />
+            isVerified ? (
+              <SessionsTab />
+            ) : (
+              <LockedTab
+                icon={Calendar}
+                title="Sessions calendar"
+                description="View your confirmed bookings, join live session rooms, and maintain envelope-encrypted session notes. This feature will be available once you are verified."
+                accent="bg-accent-lavender/40 border-[#B7A6E0]/20"
+              />
+            )
           )}
 
           {/* ══ TAB 5: EARNINGS ══════════════════════════════════════════ */}
@@ -1350,6 +1356,186 @@ const MODALITY_ICON: Record<string, React.ElementType> = {
   video: Video,
   audio: Headphones,
   chat: MessageSquare,
+}
+
+const fmtSessionTime = (iso: string) =>
+  new Intl.DateTimeFormat('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  }).format(new Date(iso))
+
+function SessionsTab() {
+  const navigate = useNavigate()
+  const [sessions, setSessions] = useState<LiveSessionState[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [notesFor, setNotesFor] = useState<string | null>(null)
+
+  useEffect(() => {
+    api
+      .getLiveSessions()
+      .then(setSessions)
+      .catch((err) => {
+        setError(
+          err instanceof ApiError ? err.message : 'Failed to load sessions.',
+        )
+      })
+  }, [])
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
+        {error}
+      </div>
+    )
+  }
+
+  if (sessions === null) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Spinner className="h-6 w-6 text-forest" />
+      </div>
+    )
+  }
+
+  const upcoming = sessions
+    .filter((s) => s.status === 'scheduled' || s.status === 'live')
+    .sort(
+      (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
+    )
+  const past = sessions.filter(
+    (s) => s.status === 'completed' || s.status === 'no_show',
+  )
+
+  return (
+    <div className="space-y-8">
+      <header className="space-y-1">
+        <h2 className="font-display text-3xl font-normal text-ink">
+          Calendar & sessions
+        </h2>
+        <p className="text-sm text-ink-soft">
+          Your confirmed bookings and past sessions. (Times in IST)
+        </p>
+      </header>
+
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+          Upcoming
+        </h3>
+        {upcoming.length === 0 ? (
+          <div className="rounded-2xl border border-line/60 bg-paper p-8 text-center text-sm text-ink-soft">
+            No upcoming sessions. Confirmed bookings appear here.
+          </div>
+        ) : (
+          upcoming.map((s) => {
+            const Icon = MODALITY_ICON[s.modality] ?? Video
+            return (
+              <div
+                key={s.live_session_id}
+                className="flex items-center gap-4 rounded-2xl border border-line/60 bg-paper p-4 shadow-soft"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest-tint text-forest">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-ink">
+                    {s.other_party_name ?? 'Seeker'}
+                  </p>
+                  <p className="mt-0.5 text-xs text-ink-soft">
+                    {fmtSessionTime(s.starts_at)} IST ·{' '}
+                    <span className="capitalize">{s.modality}</span>
+                    {s.status === 'live' && (
+                      <span className="ml-1.5 font-medium text-forest">
+                        · in progress
+                      </span>
+                    )}
+                  </p>
+                </div>
+                {s.can_join ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/session/${s.booking_id}`)}
+                    className="rounded-full bg-forest px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-forest-deep active:scale-[0.98]"
+                  >
+                    Join session
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-ink-soft">
+                    Opens 10 min before
+                  </span>
+                )}
+              </div>
+            )
+          })
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+          Past sessions
+        </h3>
+        {past.length === 0 ? (
+          <div className="rounded-2xl border border-line/60 bg-paper p-8 text-center text-sm text-ink-soft">
+            Completed sessions and your private notes will appear here.
+          </div>
+        ) : (
+          past.map((s) => {
+            const Icon = MODALITY_ICON[s.modality] ?? Video
+            const open = notesFor === s.booking_id
+            return (
+              <div
+                key={s.live_session_id}
+                className="rounded-2xl border border-line/60 bg-paper/70 p-4"
+              >
+                <div className="flex items-center gap-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink/5 text-ink-soft">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-ink">
+                      {s.other_party_name ?? 'Seeker'}
+                    </p>
+                    <p className="mt-0.5 text-xs text-ink-soft">
+                      {fmtSessionTime(s.starts_at)} IST ·{' '}
+                      <span className="capitalize">{s.modality}</span>
+                      {s.duration_minutes != null &&
+                        ` · ${s.duration_minutes} min`}
+                      {s.status === 'no_show' && (
+                        <span className="ml-1.5 text-red-600">· no-show</span>
+                      )}
+                    </p>
+                  </div>
+                  {s.status === 'completed' && (
+                    <button
+                      type="button"
+                      onClick={() => setNotesFor(open ? null : s.booking_id)}
+                      className={cn(
+                        'rounded-full border px-4 py-2 text-xs font-medium transition-colors',
+                        open
+                          ? 'border-forest/30 bg-forest-tint text-forest'
+                          : 'border-line bg-paper text-ink-soft hover:bg-forest-tint',
+                      )}
+                    >
+                      {s.has_note ? 'View notes' : 'Add notes'}
+                    </button>
+                  )}
+                </div>
+                {open && (
+                  <div className="mt-4 border-t border-line/60 pt-4">
+                    <NotesEditor bookingId={s.booking_id} />
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
+      </section>
+    </div>
+  )
 }
 
 function EarningsTab() {

@@ -71,15 +71,22 @@ export function UpcomingSessionCard({
             </div>
           </div>
 
-          {/* "Get in Touch"-style pill CTA from reference */}
+          {/* "Get in Touch"-style pill CTA from reference. Joins the live room
+              when the window is open; otherwise leads to the calendar. */}
           <Link
-            to={ROUTE_CALENDAR}
-            className="flex w-full items-center gap-3 rounded-full bg-ink px-5 py-3 text-sm font-medium text-cream transition-all hover:bg-forest-deep"
+            to={session.joinable ? `/session/${session.id}` : ROUTE_CALENDAR}
+            className={
+              session.joinable
+                ? 'flex w-full items-center gap-3 rounded-full bg-forest px-5 py-3 text-sm font-medium text-cream transition-all hover:bg-forest-deep'
+                : 'flex w-full items-center gap-3 rounded-full bg-ink px-5 py-3 text-sm font-medium text-cream transition-all hover:bg-forest-deep'
+            }
           >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cream/15">
               <ArrowRight className="h-3.5 w-3.5" />
             </span>
-            <span className="flex-1 text-center">Join session</span>
+            <span className="flex-1 text-center">
+              {session.joinable ? 'Join session now' : 'View in calendar'}
+            </span>
           </Link>
         </div>
       )}

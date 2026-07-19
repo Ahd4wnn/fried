@@ -553,12 +553,73 @@ export const api = {
         payout_reference: string | null
       }>
     }>('/therapist/earnings'),
+  // ─── Live sessions (LiveKit) ───────────────────────────────────────────────
+  getLiveSessions: () => request<LiveSessionState[]>('/live/sessions'),
+  getLiveSession: (bookingId: string) =>
+    request<LiveSessionState>(`/live/${bookingId}`),
+  getLiveToken: (bookingId: string) =>
+    request<LiveTokenResponse>(`/live/${bookingId}/token`, { method: 'POST' }),
+  leaveLiveSession: (bookingId: string) =>
+    request<{ status: string }>(`/live/${bookingId}/leave`, { method: 'POST' }),
+  endLiveSession: (bookingId: string) =>
+    request<{ status: string }>(`/live/${bookingId}/end`, { method: 'POST' }),
+  getSessionNote: (bookingId: string) =>
+    request<SessionNote>(`/live/${bookingId}/note`),
+  saveSessionNote: (bookingId: string, text: string) =>
+    request<SessionNote>(`/live/${bookingId}/note`, {
+      method: 'PUT',
+      body: { text },
+    }),
+
   getAdminPayments: () => request<AdminPaymentsData>('/admin/payments'),
   adminRefundPayment: (paymentId: string, amountPaise?: number) =>
     request<{ status: string; message: string }>(`/admin/payments/${paymentId}/refund`, {
       method: 'POST',
       body: amountPaise !== undefined ? { amount_paise: amountPaise } : {},
     }),
+}
+
+// ─── Live session types (metadata only — no transcripts, no tokens stored) ───
+
+export type SessionModality = 'video' | 'audio' | 'chat'
+
+export type LiveSessionStatus =
+  | 'scheduled'
+  | 'live'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show'
+
+export interface LiveSessionState {
+  booking_id: string
+  live_session_id: string
+  modality: SessionModality
+  status: LiveSessionStatus
+  starts_at: string
+  ends_at: string
+  started_at: string | null
+  ended_at: string | null
+  my_role: 'seeker' | 'therapist'
+  other_party_name: string | null
+  can_join: boolean
+  join_opens_at: string
+  join_closes_at: string
+  duration_minutes: number | null
+  has_note: boolean
+}
+
+export interface LiveTokenResponse {
+  token: string
+  url: string
+  room: string
+  identity: string
+  modality: SessionModality
+  other_party_name: string | null
+}
+
+export interface SessionNote {
+  text: string | null
+  updated_at: string | null
 }
 
 // ─── Payments types (admin metadata views — no card data / PII) ───────────────

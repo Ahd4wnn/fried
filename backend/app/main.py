@@ -23,6 +23,7 @@ from app.routers import (
     ai,
     handoff,
     health,
+    live,
     me,
     media,
     onboarding,
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
     app.include_router(scheduling.router)
     app.include_router(payments.router)
     app.include_router(payments.webhook_router)
+    app.include_router(live.router)
     return app
 
 
